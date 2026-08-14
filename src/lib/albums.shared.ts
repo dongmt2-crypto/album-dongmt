@@ -13,41 +13,44 @@ export type Album = {
 
 export type SearchMode = "all" | "artist" | "album";
 
-type RawResult = {
-  collectionId?: number;
-  collectionName?: string;
-  artistName?: string;
-  artworkUrl100?: string;
-  releaseDate?: string;
-  trackCount?: number;
-  primaryGenreName?: string;
+type DeezerAlbum = {
+  id?: number;
+  title?: string;
+  cover_xl?: string;
+  nb_tracks?: number;
+  artist?: { name?: string };
 };
 
 const sizeUrl = (art: string, px: number) =>
-  art.replace(/\/\d+x\d+(bb)?\.(jpg|png)$/i, `/${px}x${px}bb.jpg`);
+  art.replace(/\/\d+x\d+-[^/]+\.(jpg|png)$/i, `/${px}x${px}-000000-80-0-0.jpg`);
 
-export function mapAlbums(results: unknown): Album[] {
-  const raw = (Array.isArray(results) ? results : []) as RawResult[];
+export function mapAlbums(results: unknown, query: string, mode: SearchMode): Album[] {
+  const raw = (Array.isArray(results) ? results : []) as DeezerAlbum[];
   const seen = new Set<number>();
   const albums: Album[] = [];
+  const needle = query.trim().toLocaleLowerCase();
 
   for (const r of raw) {
-    const id = typeof r.collectionId === "number" ? r.collectionId : null;
-    const art = typeof r.artworkUrl100 === "string" ? r.artworkUrl100 : null;
+    const id = typeof r.id === "number" ? r.id : null;
+    const art = typeof r.cover_xl === "string" ? r.cover_xl : null;
     if (id === null || !art || seen.has(id)) continue;
+    const title = r.title ?? "Untitled";
+    const artist = r.artist?.name ?? "Unknown artist";
+    if (mode === "artist" && !artist.toLocaleLowerCase().includes(needle)) continue;
+    if (mode === "album" && !title.toLocaleLowerCase().includes(needle)) continue;
     seen.add(id);
 
     albums.push({
       id,
-      title: r.collectionName ?? "Untitled",
-      artist: r.artistName ?? "Unknown artist",
-      year: typeof r.releaseDate === "string" ? r.releaseDate.slice(0, 4) : null,
-      trackCount: typeof r.trackCount === "number" ? r.trackCount : null,
-      genre: r.primaryGenreName ?? null,
+      title,
+      artist,
+      year: null,
+      trackCount: typeof r.nb_tracks === "number" ? r.nb_tracks : null,
+      genre: null,
       thumb: sizeUrl(art, 300),
       medium: sizeUrl(art, 600),
       large: sizeUrl(art, 1200),
-      max: sizeUrl(art, 3000),
+      max: sizeUrl(art, 1800),
     });
   }
 
@@ -56,12 +59,8 @@ export function mapAlbums(results: unknown): Album[] {
 
 export function buildSearchUrl(query: string, mode: SearchMode) {
   const params = new URLSearchParams({
-    term: query,
-    entity: "album",
-    media: "music",
-    limit: "48",
+    q: query,
+    limit: mode === "all" ? "48" : "100",
   });
-  if (mode === "artist") params.set("attribute", "artistTerm");
-  if (mode === "album") params.set("attribute", "albumTerm");
-  return `https://itunes.apple.com/search?${params.toString()}`;
+  return `https://api.deezer.com/search/album?${params.toString()}`;
 }
