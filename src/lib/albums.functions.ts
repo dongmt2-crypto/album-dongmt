@@ -15,8 +15,7 @@ export const searchAlbums = createServerFn({ method: "GET" })
     const url = buildSearchUrl(data.query, data.mode);
     let lastError = "";
 
-    // Apple's search endpoint rate-limits bursts (403/429) and occasionally
-    // returns an empty body, so retry a couple of times with backoff.
+    // Retry transient upstream failures without imposing a client-side deadline.
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt));
       try {
@@ -32,8 +31,15 @@ export const searchAlbums = createServerFn({ method: "GET" })
           lastError = "empty response";
           continue;
         }
-        const json = JSON.parse(text) as { results?: unknown };
-        return mapAlbums(json.results);
+        const json = JSON.parse(text) as {
+          data?: unknown;
+          error?: { message?: string };
+        };
+        if (json.error) {
+          lastError = json.error.message ?? "provider error";
+          continue;
+        }
+        return mapAlbums(json.data, data.query, data.mode).slice(0, 48);
       } catch (error) {
         lastError = error instanceof Error ? error.message : String(error);
       }

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const ALLOWED_HOSTS = /(^|\.)mzstatic\.com$/i;
+const ALLOWED_HOSTS = /(^|\.)dzcdn\.net$/i;
 
 function sanitize(name: string) {
   return name.replace(/[^a-z0-9\-_() .]/gi, "_").slice(0, 120);
