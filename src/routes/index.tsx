@@ -41,6 +41,8 @@ function Index() {
     queryFn: () => search({ data: { query: submitted, mode } }),
     enabled: submitted.trim().length > 0,
     staleTime: 5 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attempt) => 600 * (attempt + 1),
   });
 
   const run = (term: string) => {
