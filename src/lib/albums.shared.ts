@@ -24,6 +24,18 @@ type SpotifyAlbum = {
   artists?: { name?: string }[];
 };
 
+type DeezerAlbum = {
+  id?: number | string;
+  title?: string;
+  release_date?: string;
+  nb_tracks?: number;
+  cover_small?: string;
+  cover_medium?: string;
+  cover_big?: string;
+  cover_xl?: string;
+  artist?: { name?: string };
+};
+
 /** Spotify serves fixed image variants (640 / 300 / 64); pick the closest at or above the target. */
 function pickImage(images: SpotifyImage[], target: number): string | null {
   const usable = images
@@ -68,6 +80,40 @@ export function mapAlbums(results: unknown, query: string, mode: SearchMode): Al
   return albums;
 }
 
+export function mapDeezerAlbums(results: unknown, query: string, mode: SearchMode): Album[] {
+  const raw = (Array.isArray(results) ? results : []) as DeezerAlbum[];
+  const seen = new Set<string>();
+  const albums: Album[] = [];
+  const needle = query.trim().toLocaleLowerCase();
+
+  for (const result of raw) {
+    const id = result.id === undefined ? null : String(result.id);
+    const max = result.cover_xl ?? result.cover_big ?? result.cover_medium ?? null;
+    if (!id || !max || seen.has(id)) continue;
+
+    const title = result.title ?? "Untitled";
+    const artist = result.artist?.name ?? "Unknown artist";
+    if (mode === "artist" && !artist.toLocaleLowerCase().includes(needle)) continue;
+    if (mode === "album" && !title.toLocaleLowerCase().includes(needle)) continue;
+    seen.add(id);
+
+    albums.push({
+      id: `deezer-${id}`,
+      title,
+      artist,
+      year: result.release_date ? result.release_date.slice(0, 4) : null,
+      trackCount: typeof result.nb_tracks === "number" ? result.nb_tracks : null,
+      genre: null,
+      thumb: result.cover_medium ?? result.cover_small ?? max,
+      medium: result.cover_medium ?? result.cover_big ?? max,
+      large: result.cover_big ?? max,
+      max,
+    });
+  }
+
+  return albums;
+}
+
 export function buildSearchUrl(query: string, mode: SearchMode) {
   const q =
     mode === "artist"
@@ -77,4 +123,11 @@ export function buildSearchUrl(query: string, mode: SearchMode) {
         : query.trim();
   const params = new URLSearchParams({ q, type: "album", limit: "48" });
   return `https://api.spotify.com/v1/search?${params.toString()}`;
+}
+
+export function buildDeezerSearchUrl(query: string, mode: SearchMode) {
+  const value = query.trim().replaceAll('"', "");
+  const q = mode === "artist" ? `artist:\"${value}\"` : mode === "album" ? `album:\"${value}\"` : value;
+  const params = new URLSearchParams({ q, limit: "48", output: "json" });
+  return `https://api.deezer.com/search/album?${params.toString()}`;
 }
