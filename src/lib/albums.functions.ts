@@ -48,6 +48,6 @@ export const searchAlbums = createServerFn({ method: "GET" })
       }
     }
 
-    console.error("[albums] search failed:", lastError);
+    console.error("[albums] Spotify search failed:", lastError);
     throw new Error(`Artwork search failed (${lastError})`);
   });
