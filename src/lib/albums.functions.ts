@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { buildSearchUrl, mapAlbums, type Album } from "./albums.shared";
+import {
+  buildDeezerSearchUrl,
+  buildSearchUrl,
+  mapAlbums,
+  mapDeezerAlbums,
+  type Album,
+} from "./albums.shared";
 
 export const searchAlbums = createServerFn({ method: "GET" })
   .inputValidator((data) =>
@@ -16,7 +22,8 @@ export const searchAlbums = createServerFn({ method: "GET" })
     const url = buildSearchUrl(data.query, data.mode);
     let lastError = "";
 
-    // Retry transient upstream failures without imposing a client-side deadline.
+    // Spotify now requires Premium for some app owners. Keep it primary, but
+    // transparently use Deezer when Spotify denies or cannot serve the search.
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt));
       try {
@@ -30,7 +37,11 @@ export const searchAlbums = createServerFn({ method: "GET" })
           continue;
         }
         if (!res.ok) {
-          lastError = `status ${res.status}`;
+          const body = (await res.json().catch(() => null)) as
+            | { error?: { message?: string } }
+            | null;
+          lastError = body?.error?.message ?? `status ${res.status}`;
+          if (res.status === 403) break;
           continue;
         }
         const json = (await res.json()) as {
@@ -48,6 +59,18 @@ export const searchAlbums = createServerFn({ method: "GET" })
       }
     }
 
-    console.error("[albums] Spotify search failed:", lastError);
-    throw new Error(`Artwork search failed (${lastError})`);
+    console.warn("[albums] Spotify unavailable; using Deezer fallback:", lastError);
+    try {
+      const fallback = await fetch(buildDeezerSearchUrl(data.query, data.mode), {
+        headers: { Accept: "application/json", "User-Agent": "DONGMT-Album-Art/1.0" },
+      });
+      if (!fallback.ok) throw new Error(`status ${fallback.status}`);
+      const json = (await fallback.json()) as { data?: unknown; error?: { message?: string } };
+      if (json.error) throw new Error(json.error.message ?? "provider error");
+      return mapDeezerAlbums(json.data, data.query, data.mode).slice(0, 48);
+    } catch (error) {
+      const fallbackError = error instanceof Error ? error.message : String(error);
+      console.error("[albums] Artwork providers failed:", { spotify: lastError, deezer: fallbackError });
+      throw new Error("Artwork search is temporarily unavailable");
+    }
   });
