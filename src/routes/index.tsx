@@ -56,13 +56,13 @@ function Index() {
         <header className="mx-auto max-w-2xl text-center">
           <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.3em] text-primary">
             <Disc3 className="size-4" aria-hidden />
-            Cover Vault
+            DONGMT
           </div>
           <h1 className="mt-5 font-serif text-4xl leading-[1.1] text-foreground sm:text-6xl">
-            Album cover art, in full resolution.
+            Album cover arts
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">
-            Search by artist or album, preview the artwork large, and download it up to 1800×1800.
+            Search by artist or album, and download it.
           </p>
         </header>
 
