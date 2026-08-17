@@ -12,6 +12,7 @@ export const searchAlbums = createServerFn({ method: "GET" })
       .parse(data),
   )
   .handler(async ({ data }): Promise<Album[]> => {
+    const { getSpotifyToken, clearSpotifyToken } = await import("./albums.server");
     const url = buildSearchUrl(data.query, data.mode);
     let lastError = "";
 
@@ -19,29 +20,31 @@ export const searchAlbums = createServerFn({ method: "GET" })
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt));
       try {
+        const token = await getSpotifyToken();
         const res = await fetch(url, {
-          headers: { Accept: "application/json", "User-Agent": "CoverVault/1.0" },
+          headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
         });
+        if (res.status === 401) {
+          clearSpotifyToken();
+          lastError = "token expired";
+          continue;
+        }
         if (!res.ok) {
           lastError = `status ${res.status}`;
           continue;
         }
-        const text = await res.text();
-        if (!text.trim()) {
-          lastError = "empty response";
-          continue;
-        }
-        const json = JSON.parse(text) as {
-          data?: unknown;
+        const json = (await res.json()) as {
+          albums?: { items?: unknown };
           error?: { message?: string };
         };
         if (json.error) {
           lastError = json.error.message ?? "provider error";
           continue;
         }
-        return mapAlbums(json.data, data.query, data.mode).slice(0, 48);
+        return mapAlbums(json.albums?.items, data.query, data.mode).slice(0, 48);
       } catch (error) {
         lastError = error instanceof Error ? error.message : String(error);
+        if (lastError.includes("not configured")) break;
       }
     }
 

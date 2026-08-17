@@ -1,6 +1,6 @@
 import type { Album } from "./albums.shared";
 
-const SIZE_KEY = { 600: "medium", 1200: "large", 1800: "max" } as const;
+const SIZE_KEY = { 300: "medium", 640: "max" } as const;
 
 export type ArtworkSize = keyof typeof SIZE_KEY;
 

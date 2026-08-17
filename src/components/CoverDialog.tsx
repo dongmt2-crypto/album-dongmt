@@ -9,7 +9,7 @@ import {
 import type { Album } from "@/lib/albums.shared";
 import { downloadArtwork, type ArtworkSize } from "@/lib/download";
 
-const SIZES: ArtworkSize[] = [600, 1200, 1800];
+const SIZES: ArtworkSize[] = [300, 640];
 
 type Props = {
   album: Album | null;
