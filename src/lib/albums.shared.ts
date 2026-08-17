@@ -1,5 +1,5 @@
 export type Album = {
-  id: number;
+  id: string;
   title: string;
   artist: string;
   year: string | null;
@@ -13,29 +13,40 @@ export type Album = {
 
 export type SearchMode = "all" | "artist" | "album";
 
-type DeezerAlbum = {
-  id?: number;
-  title?: string;
-  cover_xl?: string;
-  nb_tracks?: number;
-  artist?: { name?: string };
+type SpotifyImage = { url?: string; width?: number | null; height?: number | null };
+
+type SpotifyAlbum = {
+  id?: string;
+  name?: string;
+  release_date?: string;
+  total_tracks?: number;
+  images?: SpotifyImage[];
+  artists?: { name?: string }[];
 };
 
-const sizeUrl = (art: string, px: number) =>
-  art.replace(/\/\d+x\d+-[^/]+\.(jpg|png)$/i, `/${px}x${px}-000000-80-0-0.jpg`);
+/** Spotify serves fixed image variants (640 / 300 / 64); pick the closest at or above the target. */
+function pickImage(images: SpotifyImage[], target: number): string | null {
+  const usable = images
+    .filter((i) => typeof i.url === "string")
+    .map((i) => ({ url: i.url as string, w: i.width ?? 0 }))
+    .sort((a, b) => a.w - b.w);
+  if (usable.length === 0) return null;
+  return (usable.find((i) => i.w >= target) ?? usable[usable.length - 1]!).url;
+}
 
 export function mapAlbums(results: unknown, query: string, mode: SearchMode): Album[] {
-  const raw = (Array.isArray(results) ? results : []) as DeezerAlbum[];
-  const seen = new Set<number>();
+  const raw = (Array.isArray(results) ? results : []) as SpotifyAlbum[];
+  const seen = new Set<string>();
   const albums: Album[] = [];
   const needle = query.trim().toLocaleLowerCase();
 
   for (const r of raw) {
-    const id = typeof r.id === "number" ? r.id : null;
-    const art = typeof r.cover_xl === "string" ? r.cover_xl : null;
-    if (id === null || !art || seen.has(id)) continue;
-    const title = r.title ?? "Untitled";
-    const artist = r.artist?.name ?? "Unknown artist";
+    const id = typeof r.id === "string" ? r.id : null;
+    const images = Array.isArray(r.images) ? r.images : [];
+    const max = pickImage(images, 640);
+    if (id === null || !max || seen.has(id)) continue;
+    const title = r.name ?? "Untitled";
+    const artist = r.artists?.map((a) => a.name).filter(Boolean).join(", ") || "Unknown artist";
     if (mode === "artist" && !artist.toLocaleLowerCase().includes(needle)) continue;
     if (mode === "album" && !title.toLocaleLowerCase().includes(needle)) continue;
     seen.add(id);
@@ -44,13 +55,13 @@ export function mapAlbums(results: unknown, query: string, mode: SearchMode): Al
       id,
       title,
       artist,
-      year: null,
-      trackCount: typeof r.nb_tracks === "number" ? r.nb_tracks : null,
+      year: r.release_date ? r.release_date.slice(0, 4) : null,
+      trackCount: typeof r.total_tracks === "number" ? r.total_tracks : null,
       genre: null,
-      thumb: sizeUrl(art, 300),
-      medium: sizeUrl(art, 600),
-      large: sizeUrl(art, 1200),
-      max: sizeUrl(art, 1800),
+      thumb: pickImage(images, 300) ?? max,
+      medium: pickImage(images, 300) ?? max,
+      large: max,
+      max,
     });
   }
 
@@ -58,9 +69,12 @@ export function mapAlbums(results: unknown, query: string, mode: SearchMode): Al
 }
 
 export function buildSearchUrl(query: string, mode: SearchMode) {
-  const params = new URLSearchParams({
-    q: query,
-    limit: mode === "all" ? "48" : "100",
-  });
-  return `https://api.deezer.com/search/album?${params.toString()}`;
+  const q =
+    mode === "artist"
+      ? `artist:"${query.trim()}"`
+      : mode === "album"
+        ? `album:"${query.trim()}"`
+        : query.trim();
+  const params = new URLSearchParams({ q, type: "album", limit: "48" });
+  return `https://api.spotify.com/v1/search?${params.toString()}`;
 }

@@ -38,9 +38,9 @@ export function CoverCard({ album, onOpen }: Props) {
         </div>
         <button
           type="button"
-          onClick={() => downloadArtwork(album, 1800)}
-          title="Download 1800px cover"
-          aria-label={`Download ${album.title} cover at 1800 pixels`}
+          onClick={() => downloadArtwork(album, 640)}
+          title="Download 640px cover"
+          aria-label={`Download ${album.title} cover at 640 pixels`}
           className="shrink-0 rounded-full p-2 text-muted-foreground opacity-0 transition-all hover:bg-primary/15 hover:text-primary focus-visible:opacity-100 group-hover:opacity-100"
         >
           <Download className="size-4" aria-hidden />

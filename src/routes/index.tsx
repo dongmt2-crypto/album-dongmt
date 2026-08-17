@@ -11,7 +11,7 @@ import type { Album, SearchMode } from "@/lib/albums.shared";
 
 const TITLE = "Cover Vault — Search & Download Album Cover Art";
 const DESCRIPTION =
-  "Search album artwork by artist or album name and download official covers in up to 1800×1800 resolution, free and without an account.";
+  "Search album artwork by artist or album name and download official covers in up to 640×640 resolution, free and without an account.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
