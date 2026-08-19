@@ -1,19 +1,20 @@
 import type { Album } from "./albums.shared";
 
-const SIZE_KEY = { 300: "medium", 640: "max" } as const;
-
-export type ArtworkSize = keyof typeof SIZE_KEY;
-
-export function artworkDownloadHref(album: Album, size: ArtworkSize) {
-  const src = album[SIZE_KEY[size]];
-  const filename = `${album.artist} - ${album.title} (${size}x${size}).jpg`;
-  return `/api/public/artwork?src=${encodeURIComponent(src)}&filename=${encodeURIComponent(filename)}`;
+function safeTitle(album: Album) {
+  const base = album.title.replace(/\s+/g, " ").trim() || "album-cover";
+  return base.slice(0, 80);
 }
 
-export function downloadArtwork(album: Album, size: ArtworkSize) {
+export function artworkDownloadHref(album: Album) {
+  const ext = /\.(png|webp|jpeg|jpg|gif)/i.exec(album.full)?.[1]?.toLowerCase() ?? "jpg";
+  const filename = `${safeTitle(album)}.${ext === "jpeg" ? "jpg" : ext}`;
+  return `/api/public/artwork?src=${encodeURIComponent(album.full)}&filename=${encodeURIComponent(filename)}`;
+}
+
+export function downloadArtwork(album: Album) {
   if (typeof document === "undefined") return;
   const link = document.createElement("a");
-  link.href = artworkDownloadHref(album, size);
+  link.href = artworkDownloadHref(album);
   link.rel = "noopener";
   document.body.appendChild(link);
   link.click();
