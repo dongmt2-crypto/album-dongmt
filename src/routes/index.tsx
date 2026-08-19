@@ -9,9 +9,9 @@ import { CoverDialog } from "@/components/CoverDialog";
 import { searchAlbums } from "@/lib/albums.functions";
 import type { Album, SearchMode } from "@/lib/albums.shared";
 
-const TITLE = "Cover Vault — Search & Download Album Cover Art";
+const TITLE = "DONGMT — Search & Download Album Cover Art";
 const DESCRIPTION =
-  "Search album artwork by artist or album name and download official covers in up to 640×640 resolution, free and without an account.";
+  "Search album artwork by artist or album name across the web and download full-size covers, free and without an account.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -103,7 +103,7 @@ function Index() {
             <div className="mx-auto max-w-md text-center">
               <h2 className="font-serif text-2xl text-foreground">Search failed</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                The artwork service didn't respond. Give it another try.
+                The image search didn't respond. Give it another try.
               </p>
               <button
                 type="button"
@@ -117,7 +117,7 @@ function Index() {
 
           {submitted && query.isSuccess && query.data.length === 0 && (
             <div className="mx-auto max-w-md text-center">
-              <h2 className="font-serif text-2xl text-foreground">No albums found</h2>
+              <h2 className="font-serif text-2xl text-foreground">No covers found</h2>
               <p className="mt-2 text-sm text-muted-foreground">
                 Nothing matched “{submitted}”. Try a different spelling or switch the match mode.
               </p>
