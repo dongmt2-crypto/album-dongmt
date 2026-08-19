@@ -1,7 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const ALLOWED_HOSTS = /(^|\.)(scdn\.co|dzcdn\.net)$/i;
-
 function sanitize(name: string) {
   return name.replace(/[^a-z0-9\-_() .]/gi, "_").slice(0, 120);
 }
@@ -22,19 +20,26 @@ export const Route = createFileRoute("/api/public/artwork")({
         } catch {
           return new Response("Invalid src", { status: 400 });
         }
-        if (target.protocol !== "https:" || !ALLOWED_HOSTS.test(target.hostname)) {
+        // Only public https images; block private/loopback hosts.
+        if (target.protocol !== "https:") {
+          return new Response("Only https sources are allowed", { status: 403 });
+        }
+        if (/^(localhost$|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|\[)/i.test(target.hostname)) {
           return new Response("Host not allowed", { status: 403 });
         }
 
-        const upstream = await fetch(target.toString());
-        if (!upstream.ok || !upstream.body) {
+        const upstream = await fetch(target.toString(), {
+          headers: { "User-Agent": "Mozilla/5.0", Accept: "image/*" },
+        });
+        const contentType = upstream.headers.get("content-type") ?? "image/jpeg";
+        if (!upstream.ok || !upstream.body || !contentType.startsWith("image/")) {
           return new Response("Artwork unavailable", { status: 502 });
         }
 
         return new Response(upstream.body, {
           status: 200,
           headers: {
-            "Content-Type": upstream.headers.get("content-type") ?? "image/jpeg",
+            "Content-Type": contentType,
             "Content-Disposition": `attachment; filename="${sanitize(filename)}"`,
             "Cache-Control": "public, max-age=86400",
           },

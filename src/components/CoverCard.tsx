@@ -14,12 +14,13 @@ export function CoverCard({ album, onOpen }: Props) {
         type="button"
         onClick={() => onOpen(album)}
         className="relative block w-full overflow-hidden rounded-sm bg-card ring-1 ring-border transition-transform duration-300 hover:-translate-y-1 hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        aria-label={`View ${album.title} by ${album.artist}`}
+        aria-label={`View ${album.title}`}
       >
         <img
           src={album.thumb}
-          alt={`${album.title} album cover by ${album.artist}`}
+          alt={`${album.title} album cover`}
           loading="lazy"
+          referrerPolicy="no-referrer"
           width={300}
           height={300}
           className="aspect-square w-full object-cover"
@@ -31,16 +32,15 @@ export function CoverCard({ album, onOpen }: Props) {
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-foreground">{album.title}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {album.artist}
-            {album.year ? ` · ${album.year}` : ""}
-            {album.trackCount ? ` · ${album.trackCount} tracks` : ""}
+            {album.source}
+            {album.width && album.height ? ` · ${album.width}×${album.height}` : ""}
           </p>
         </div>
         <button
           type="button"
-          onClick={() => downloadArtwork(album, 640)}
-          title="Download 640px cover"
-          aria-label={`Download ${album.title} cover at 640 pixels`}
+          onClick={() => downloadArtwork(album)}
+          title="Download full-size cover"
+          aria-label={`Download ${album.title} cover`}
           className="shrink-0 rounded-full p-2 text-muted-foreground opacity-0 transition-all hover:bg-primary/15 hover:text-primary focus-visible:opacity-100 group-hover:opacity-100"
         >
           <Download className="size-4" aria-hidden />

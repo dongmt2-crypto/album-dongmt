@@ -1,4 +1,4 @@
-import { Download } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,9 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Album } from "@/lib/albums.shared";
-import { downloadArtwork, type ArtworkSize } from "@/lib/download";
-
-const SIZES: ArtworkSize[] = [300, 640];
+import { downloadArtwork } from "@/lib/download";
 
 type Props = {
   album: Album | null;
@@ -23,8 +21,9 @@ export function CoverDialog({ album, onClose }: Props) {
         {album && (
           <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_16rem]">
             <img
-              src={album.large}
-              alt={`${album.title} album cover by ${album.artist}`}
+              src={album.full}
+              alt={`${album.title} album cover`}
+              referrerPolicy="no-referrer"
               className="aspect-square w-full rounded-sm object-cover ring-1 ring-border"
             />
             <div className="flex flex-col">
@@ -32,48 +31,38 @@ export function CoverDialog({ album, onClose }: Props) {
                 <DialogTitle className="font-serif text-2xl leading-tight">
                   {album.title}
                 </DialogTitle>
-                <DialogDescription>{album.artist}</DialogDescription>
+                <DialogDescription>{album.source}</DialogDescription>
               </DialogHeader>
 
               <dl className="mt-4 space-y-1 text-xs text-muted-foreground">
-                {album.year && (
+                {album.width && album.height && (
                   <div className="flex justify-between gap-4">
-                    <dt>Released</dt>
-                    <dd className="text-foreground">{album.year}</dd>
-                  </div>
-                )}
-                {album.genre && (
-                  <div className="flex justify-between gap-4">
-                    <dt>Genre</dt>
-                    <dd className="text-foreground">{album.genre}</dd>
-                  </div>
-                )}
-                {album.trackCount && (
-                  <div className="flex justify-between gap-4">
-                    <dt>Tracks</dt>
-                    <dd className="text-foreground">{album.trackCount}</dd>
+                    <dt>Size</dt>
+                    <dd className="text-foreground">
+                      {album.width}×{album.height}
+                    </dd>
                   </div>
                 )}
               </dl>
 
               <div className="mt-6 space-y-2">
-                {SIZES.slice()
-                  .reverse()
-                  .map((size, i) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => downloadArtwork(album, size)}
-                      className={
-                        i === 0
-                          ? "flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                          : "flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm text-muted-foreground ring-1 ring-border transition-colors hover:text-foreground"
-                      }
-                    >
-                      <Download className="size-4" aria-hidden />
-                      Download {size}×{size}
-                    </button>
-                  ))}
+                <button
+                  type="button"
+                  onClick={() => downloadArtwork(album)}
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  <Download className="size-4" aria-hidden />
+                  Download full size
+                </button>
+                <a
+                  href={album.full}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm text-muted-foreground ring-1 ring-border transition-colors hover:text-foreground"
+                >
+                  <ExternalLink className="size-4" aria-hidden />
+                  Open original
+                </a>
               </div>
             </div>
           </div>
