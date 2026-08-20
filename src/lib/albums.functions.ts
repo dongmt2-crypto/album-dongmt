@@ -7,7 +7,7 @@ const BROWSER_HEADERS = {
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
   Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
   "Accept-Language": "en-US,en;q=0.9",
-  Cookie: "SRCHHPGUSR=ADLT=DEMOTE",
+  Cookie: "SRCHHPGUSR=ADLT=STRICT&NRSLT=60; _EDGE_S=mkt=en-us; _EDGE_CD=m=en-us&u=en-us",
 };
 
 export const searchAlbums = createServerFn({ method: "GET" })
@@ -32,7 +32,7 @@ export const searchAlbums = createServerFn({ method: "GET" })
           continue;
         }
         const html = await res.text();
-        const albums = parseImageResults(html).slice(0, 60);
+        const albums = parseImageResults(html, data.query).slice(0, 60);
         if (albums.length === 0) {
           lastError = "no images found in response";
           continue;
