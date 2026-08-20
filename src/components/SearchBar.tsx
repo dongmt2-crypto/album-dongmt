@@ -4,7 +4,7 @@ import type { SearchMode } from "@/lib/albums.shared";
 const MODES: { value: SearchMode; label: string }[] = [
   { value: "all", label: "Everything" },
   { value: "artist", label: "Artist" },
-  { value: "album", label: "Album" },
+  { value: "album", label: "Albums by artist" },
 ];
 
 type Props = {
