@@ -78,6 +78,7 @@ function isRelevant(album: Album, tokens: string[]) {
 export function parseImageResults(html: string, query = ""): Album[] {
   const tokens = tokensOf(query);
   const albums: Album[] = [];
+  const relevant: Album[] = [];
   const seen = new Set<string>();
   const blocks = html.match(/m="({&quot;[\s\S]*?})"/g) ?? [];
 
@@ -107,9 +108,11 @@ export function parseImageResults(html: string, query = ""): Album[] {
       full,
     };
 
-    if (!isRelevant(album, tokens)) continue;
     albums.push(album);
+    if (isRelevant(album, tokens)) relevant.push(album);
   }
 
-  return albums;
+  // Misspelled or unusual queries can match no metadata at all; in that case
+  // fall back to the raw results instead of showing nothing.
+  return relevant.length > 0 ? relevant : albums;
 }
