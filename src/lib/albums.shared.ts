@@ -12,8 +12,9 @@ export type SearchMode = "all" | "artist" | "album";
 
 export function buildQuery(query: string, mode: SearchMode) {
   const value = query.trim();
-  if (mode === "artist") return `${value} artist album covers`;
-  if (mode === "album") return `${value} album cover art`;
+  if (mode === "artist") return `${value} artist photo album covers`;
+  // "Albums by artist": ask for the artist's full discography of cover art.
+  if (mode === "album") return `${value} discography all album covers art`;
   return `${value} album cover`;
 }
 
