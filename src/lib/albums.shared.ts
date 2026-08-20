@@ -24,6 +24,13 @@ export function buildImageSearchUrl(query: string, mode: SearchMode) {
     form: "HDRSC2",
     first: "1",
     count: "60",
+    // Pin locale and strict safe-search: server egress has no user context,
+    // which otherwise yields off-topic and unsafe results.
+    mkt: "en-US",
+    cc: "US",
+    setlang: "en",
+    safeSearch: "Strict",
+    adlt: "strict",
   });
   return `https://www.bing.com/images/search?${params.toString()}`;
 }
@@ -52,8 +59,23 @@ function hostOf(url: string) {
   }
 }
 
+/** Query tokens used to keep only results that actually match the search. */
+function tokensOf(query: string) {
+  return query
+    .toLocaleLowerCase()
+    .split(/[^a-z0-9]+/i)
+    .filter((t) => t.length >= 3);
+}
+
+function isRelevant(album: Album, tokens: string[]) {
+  if (tokens.length === 0) return true;
+  const haystack = `${album.title} ${album.source} ${album.full}`.toLocaleLowerCase();
+  return tokens.some((t) => haystack.includes(t));
+}
+
 /** Pull the embedded JSON metadata blocks out of the search results HTML. */
-export function parseImageResults(html: string): Album[] {
+export function parseImageResults(html: string, query = ""): Album[] {
+  const tokens = tokensOf(query);
   const albums: Album[] = [];
   const seen = new Set<string>();
   const blocks = html.match(/m="({&quot;[\s\S]*?})"/g) ?? [];
@@ -74,7 +96,7 @@ export function parseImageResults(html: string): Album[] {
 
     const dims = /(\d{2,4})x(\d{2,4})/.exec(full);
 
-    albums.push({
+    const album: Album = {
       id: full,
       title: raw.t ? decodeEntities(raw.t).trim() : "Album cover",
       source: hostOf(raw.purl ?? full),
@@ -82,7 +104,10 @@ export function parseImageResults(html: string): Album[] {
       height: dims ? Number(dims[2]) : null,
       thumb: typeof raw.turl === "string" && raw.turl ? raw.turl : full,
       full,
-    });
+    };
+
+    if (!isRelevant(album, tokens)) continue;
+    albums.push(album);
   }
 
   return albums;
