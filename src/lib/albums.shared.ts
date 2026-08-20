@@ -80,6 +80,14 @@ const COLLAGE_WORDS = [
   "ranked",
   "timeline",
   "collection of",
+  "albums",
+  "every ",
+  "each ",
+  "reimagining",
+  "artwork ra",
+  "grid",
+  "montage",
+  "mosaic",
 ];
 
 function looksLikeCollage(album: Album) {
