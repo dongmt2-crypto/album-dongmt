@@ -13,8 +13,8 @@ export type SearchMode = "all" | "artist" | "album";
 export function buildQuery(query: string, mode: SearchMode) {
   const value = query.trim();
   if (mode === "artist") return `${value} artist photo album covers`;
-  // "Albums by artist": ask for the artist's full discography of cover art.
-  if (mode === "album") return `${value} discography all album covers art`;
+  // "Albums by artist": individual covers, not discography collages.
+  if (mode === "album") return `${value} album cover art -collage -collection -poster`;
   return `${value} album cover`;
 }
 
@@ -68,6 +68,33 @@ function tokensOf(query: string) {
     .filter((t) => t.length >= 3);
 }
 
+/** Titles that usually indicate a montage of many covers rather than one cover. */
+const COLLAGE_WORDS = [
+  "collage",
+  "every album",
+  "all albums",
+  "all of ",
+  "discography",
+  "poster",
+  "wall",
+  "ranked",
+  "timeline",
+  "collection of",
+  "albums",
+  "every ",
+  "each ",
+  "reimagining",
+  "artwork ra",
+  "grid",
+  "montage",
+  "mosaic",
+];
+
+function looksLikeCollage(album: Album) {
+  const title = album.title.toLocaleLowerCase();
+  return COLLAGE_WORDS.some((w) => title.includes(w));
+}
+
 function isRelevant(album: Album, tokens: string[]) {
   if (tokens.length === 0) return true;
   const haystack = `${album.title} ${album.source} ${album.full}`.toLocaleLowerCase();
@@ -109,7 +136,7 @@ export function parseImageResults(html: string, query = ""): Album[] {
     };
 
     albums.push(album);
-    if (isRelevant(album, tokens)) relevant.push(album);
+    if (isRelevant(album, tokens) && !looksLikeCollage(album)) relevant.push(album);
   }
 
   // Misspelled or unusual queries can match no metadata at all; in that case

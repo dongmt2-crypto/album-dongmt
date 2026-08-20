@@ -1,4 +1,5 @@
 import { Download } from "lucide-react";
+import { useState } from "react";
 import type { Album } from "@/lib/albums.shared";
 import { downloadArtwork } from "@/lib/download";
 
@@ -8,6 +9,10 @@ type Props = {
 };
 
 export function CoverCard({ album, onOpen }: Props) {
+  // Multi-cover montages are wide/tall; only keep roughly square artwork.
+  const [hidden, setHidden] = useState(false);
+  if (hidden) return null;
+
   return (
     <figure className="group animate-in fade-in duration-500">
       <button
@@ -23,6 +28,12 @@ export function CoverCard({ album, onOpen }: Props) {
           referrerPolicy="no-referrer"
           width={300}
           height={300}
+          onLoad={(event) => {
+            const img = event.currentTarget;
+            if (!img.naturalWidth || !img.naturalHeight) return;
+            const ratio = img.naturalWidth / img.naturalHeight;
+            if (ratio < 0.8 || ratio > 1.25) setHidden(true);
+          }}
           className="aspect-square w-full object-cover"
         />
         <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/80 via-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
